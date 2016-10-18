@@ -44,6 +44,9 @@ class Hexcluster():
 		
 		if midtile == None:
 			basetile = Tile(0,0,0,self,gridobj)
+			basetile.etl,basetile.etr = (Edge(gridobj,0,0,'tl'),Edge(gridobj,0,0,'tr'))
+			basetile.er,basetile.el = (Edge(gridobj,0,0,'r'),Edge(gridobj,0,0,'l'))
+			basetile.ebl,basetile.ebr = (Edge(gridobj,0,0,'bl'),Edge(gridobj,0,0,'br'))
 			self.originx = 0
 			self.originy = 0
 			self.mid = basetile
@@ -51,66 +54,80 @@ class Hexcluster():
 			self.originx = midtile.x
 			self.originy = midtile.y
 			self.mid = midtile
-		
-		self.tiles.extend([self.mid])
+	
 		
 		topx,topy = (self.originx,4+self.originy)
-		tile = self.occupiedspace(gridobj,topx,topy)
+		tile = self.occupiedspace(gridobj,topx,topy,ring)
 		if tile is None:
 			self.top = Tile(topx,topy,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.top,'top',0)		
+			self.mid.connecttile(gridobj,self.top,'top')		
 		else:
-			self.mid.connecttile(gridobj,tile,'top',1)	
+			self.mid.connecttile(gridobj,tile,'top')	
 			
 		tlx,tly = (-3+self.originx,2+self.originy)
-		tile = self.occupiedspace(gridobj,tlx,tly)
+		tile = self.occupiedspace(gridobj,tlx,tly,ring)
 		if tile is None:
 			self.tl = Tile(tlx,tly,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.tl,'topleft',0)
+			self.mid.connecttile(gridobj,self.tl,'topleft')
 		else:
-			self.mid.connecttile(gridobj,tile,'topleft',1)			
+			self.mid.connecttile(gridobj,tile,'topleft')			
 			
 		trx,topry = (3+self.originx,2+self.originy)
-		tile = self.occupiedspace(gridobj,trx,topry)
+		tile = self.occupiedspace(gridobj,trx,topry,ring)
 		if tile is None:
 			self.tr = Tile(trx,topry,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.tr,'topright',0)			
+			self.mid.connecttile(gridobj,self.tr,'topright')			
 		else:
-			self.mid.connecttile(gridobj,tile,'topright',1)
+			self.mid.connecttile(gridobj,tile,'topright')
 
 		blx,bly = (-3+self.originx,-2+self.originy)
-		tile = self.occupiedspace(gridobj,blx,bly)
+		tile = self.occupiedspace(gridobj,blx,bly,ring)
 		if tile is None:
 			self.bl = Tile(blx,bly,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.bl,'bottomleft',0)			
+			self.mid.connecttile(gridobj,self.bl,'bottomleft')			
 		else:
-			self.mid.connecttile(gridobj,tile,'bottomleft',1)			
+			self.mid.connecttile(gridobj,tile,'bottomleft')			
 			
 		brx,bry = (3+self.originx,-2+self.originy)	
-		tile = self.occupiedspace(gridobj,brx,bry)
+		tile = self.occupiedspace(gridobj,brx,bry,ring)
 		if tile is None:
 			self.br = Tile(brx,bry,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.br,'bottomright',0)			
+			self.mid.connecttile(gridobj,self.br,'bottomright')			
 		else:
-			self.mid.connecttile(gridobj,tile,'bottomright',1)			
+			self.mid.connecttile(gridobj,tile,'bottomright')			
 			
 		botx,boty = (self.originx,-4+self.originy)
-		tile = self.occupiedspace(gridobj,botx,boty)
+		tile = self.occupiedspace(gridobj,botx,boty,ring)
 		if tile is None:
 			self.bot = Tile(botx,boty,ring+1,self,gridobj)
-			self.mid.connecttile(gridobj,self.bot,'bottom',0)			
+			self.mid.connecttile(gridobj,self.bot,'bottom')			
 		else:
-			self.mid.connecttile(gridobj,tile,'bottom',1)			
+			self.mid.connecttile(gridobj,tile,'bottom')			
 			
 		gridobj.hexclusters.extend([self])
 		
 		
-	def occupiedspace(self,gridobj,x,y):
-		for tile in gridobj.tiles:
+	def occupiedspace(self,gridobj,x,y,ring):
+		if ring == 0:
+			return		
+		
+		for tile in gridobj.tiles[ring]:
 			if (tile.x == x) and (tile.y == y):
 				return tile
 			else:
 				pass
+		
+		for tile in gridobj.tiles[ring-1]:
+			if (tile.x == x) and (tile.y == y):
+				return tile
+			else:
+				pass
+
+		for tile in gridobj.tiles[ring+1]:
+			if (tile.x == x) and (tile.y == y):
+				return tile
+			else:
+				pass				
 		# no existing tiles had the same coordinates		
 		return None
 		
@@ -138,91 +155,75 @@ class Tile():
 		self.ebl = None
 		self.ebr = None
 		hexcluster.tiles.extend([self])
-		gridobj.tiles.extend([self])
+		gridobj.tiles[ring].extend([self])
 		
-	def connecttile(self,gridobj,tile,dir,defineedges):
+	def connecttile(self,gridobj,tile,dir):
 		#pdb.set_trace()
 		if dir == 'top':
 			self.tiletop = tile
 			tile.tilebottom = self
-			if defineedges == 1:
-				pass
-			else:
-				tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
-				tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
-				if (tile.tilebottomright == None):
-					tile.er = Edge(gridobj,tile.x,tile.y,'r')
-				if (tile.tilebottomleft == None):
-					tile.el = Edge(gridobj,tile.x,tile.y,'l')
+			tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
+			tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
+			if (tile.tilebottomright == None):
+				tile.er = Edge(gridobj,tile.x,tile.y,'r')
+			if (tile.tilebottomleft == None):
+				tile.el = Edge(gridobj,tile.x,tile.y,'l')
 		elif dir == 'topright':
 			self.tiletopright = tile
 			tile.tilebottomleft = self
-			if defineedges == 1:
-				pass
-			else:			
-				tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
-				tile.er = Edge(gridobj,tile.x,tile.y,'r')
-				if (tile.tilebottom == None):
-					tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
-				if (tile.tiletopleft == None):
-					tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
+			tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
+			tile.er = Edge(gridobj,tile.x,tile.y,'r')
+			if (tile.tilebottom == None):
+				tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
+			if (tile.tiletopleft == None):
+				tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
 		elif dir == 'topleft':
 			self.tiletopleft = tile
 			tile.tilebottomright = self
-			if defineedges == 1:
-				pass
-			else:			
-				tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
-				tile.el = Edge(gridobj,tile.x,tile.y,'l')
-				if tile.tilebottom == None:
-					tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
-				if tile.tiletopright == None:
-					tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
+			tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
+			tile.el = Edge(gridobj,tile.x,tile.y,'l')
+			if tile.tilebottom == None:
+				tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
+			if tile.tiletopright == None:
+				tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
 		elif dir == 'bottom':
 			self.tilebottom = tile
 			tile.tiletop = self	
-			if defineedges == 1:
-				pass
-			else:			
-				tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
-				tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
-				if tile.tiletopleft == None:
-					tile.el = Edge(gridobj,tile.x,tile.y,'l')
-				if tile.tiletopright == None:
-					tile.er = Edge(gridobj,tile.x,tile.y,'r')
+			tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
+			tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
+			if tile.tiletopleft == None:
+				tile.el = Edge(gridobj,tile.x,tile.y,'l')
+			if tile.tiletopright == None:
+				tile.er = Edge(gridobj,tile.x,tile.y,'r')
 		elif dir == 'bottomleft':
 			self.tilebottomleft = tile
 			tile.tiletopright = self
-			if defineedges == 1:
-				pass
-			else:			
-				tile.el = Edge(gridobj,tile.x,tile.y,'l')
-				tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
-				if tile.tiletop == None:
-					tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
-				if tile.tilebottomright == None:
-					tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
+			tile.el = Edge(gridobj,tile.x,tile.y,'l')
+			tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
+			if tile.tiletop == None:
+				tile.etl = Edge(gridobj,tile.x,tile.y,'tl')
+			if tile.tilebottomright == None:
+				tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
 		elif dir == 'bottomright':
 			self.tilebottomright = tile
 			tile.tiletopleft = self	
-			if defineedges == 1:
-				pass
-			else:			
-				tile.er = Edge(gridobj,tile.x,tile.y,'r')
-				tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
-				if tile.tiletop == None:
-					tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
-				if tile.tilebottomleft == None:
-					tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
+			tile.er = Edge(gridobj,tile.x,tile.y,'r')
+			tile.ebr = Edge(gridobj,tile.x,tile.y,'br')
+			if tile.tiletop == None:
+				tile.etr = Edge(gridobj,tile.x,tile.y,'tr')
+			if tile.tilebottomleft == None:
+				tile.ebl = Edge(gridobj,tile.x,tile.y,'bl')
 		else:
 			print('invalid dir:  ',dir)
 			return
 			
+	def defineedges(self,tile):
+		pass
 
 			
 class GameSetup():	
 	def __init__(self):
-		grid = Grid(1)
+		grid = Grid(100)
 		self.allocate_resources(grid)
 		self.addnumbers(grid)
 		self.plist = ['chris','becky','tom','michelle']
@@ -280,29 +281,32 @@ class Grid():
 		self.x = 0
 		self.y = 0
 		self.hexclusters = []
-		self.tiles = []
+		self.tiles = {}
 		self.edges = []
 	
 		for ring in range(0,self.numrings):
-			if self.tiles == []:
+			if self.tiles == {}:
+				self.tiles[0] = []
+				self.tiles[1] = []
 				Hexcluster(self,None,0)
 			else:
-				for tile in self.tiles:
+				self.tiles[ring+1] = []
+				for tile in self.tiles[ring]:
 					if tile.ring == (ring):
 						Hexcluster(self,tile,ring)		
 		
 		#print(self.hexclusters)
 		
 		#print([(obj.x,obj.y) for obj in self.edges])
-		# xe = [obj.x for obj in self.edges]
-		# ye = [obj.y for obj in self.edges]
-		# plt.scatter(xe,ye)
+		xe = [obj.x for obj in self.edges]
+		ye = [obj.y for obj in self.edges]
+		m = plt.scatter(xe,ye)
 		
 		
 		#print([(obj.x,obj.y) for obj in self.tiles])
 		#x = [obj.x for obj in self.tiles]
 		#y = [obj.y for obj in self.tiles]
-		#plt.scatter(x,y,marker ='H')
+		#n = plt.scatter(x,y,marker ='H')
 		
 			
 		plt.show()
@@ -313,13 +317,13 @@ class Grid():
 
 class Edge():
 	def __init__(self,gridobj,tilex,tiley,type):
-		print('tile:  ',tilex,tiley)
+		#print('tile:  ',tilex,tiley,type)
 		if type == 'tl':
 			self.x = tilex - 1
 			self.y = tiley + 2
 		elif type == 'tr':
 			self.x = tilex + 1
-			self.y = tilex + 2
+			self.y = tiley + 2
 		elif type == 'r':
 			self.x = tilex + 2
 			self.y = tiley
@@ -331,12 +335,11 @@ class Edge():
 			self.y = tiley - 2
 		elif type == 'br':
 			self.x = tilex + 1
-			self.y = tilex - 2
+			self.y = tiley - 2
 		else:
 			return
 		
-		print('edge:  ',self.x,self.y)
-		
+		#print('edge:  ',self.x,self.y)
 		gridobj.edges.extend([self])
 		
 	
